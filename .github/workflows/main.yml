@@ -1,0 +1,51 @@
+name: Shiitake-ci
+
+on: [push]
+#on:
+#  schedule:
+#    - cron: '5 0 * * 1'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: [3.7]
+
+    steps:
+    - uses: actions/checkout@2
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@2
+      with:
+        python-version: ${{ matrix.python-version }}
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install pipenv
+        pipenv install --dev
+    - name: Execute shiitake.py
+      run: |
+        pipenv shell
+        python shiitake.py
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v1
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ secrets.AWS_REGION }}
+    - name: Transfer json to S3 bucket
+      env:
+        S3_UPLOAD_BUCKET: ${{ secrets.S3_BUCKET }}
+      run: |
+        DATE=$(date +'%Y%m%d')
+        aws s3 cp ./$DATE.json s3://$S3_UPLOAD_BUCKET/ --quiet
+    - name: Send notification to Slack
+      uses: rtCamp/action-slack-notify@v2.0.2
+      env:
+        SLACK_CHANNEL: random
+        SLACK_COLOR: '#3278BD'
+        SLACK_ICON: 'https://voguegirl.jp/wp-content/themes/vg40/assets/img/img-shiitake.png'
+        SLACK_TITLE: '今週の占いが更新されました。'
+        SLACK_MESSAGE: 'shiitake meをチェック'
+        SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+
