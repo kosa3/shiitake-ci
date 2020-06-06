@@ -37,7 +37,7 @@ jobs:
         S3_UPLOAD_BUCKET: ${{ secrets.S3_BUCKET }}
       run: |
         DATE=$(date +'%Y%m%d')
-        aws s3 cp ./$DATE.json s3://$S3_UPLOAD_BUCKET/ --quiet
+        aws s3 cp ./20200601.json s3://$S3_UPLOAD_BUCKET/ --quiet
     - name: Send notification to Slack
       uses: rtCamp/action-slack-notify@v2.0.2
       env:
